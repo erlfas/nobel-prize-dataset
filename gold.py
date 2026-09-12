@@ -37,22 +37,13 @@ def build_category_summary(df: pl.DataFrame) -> pl.DataFrame:
                 pl.col("Award_Year").n_unique().alias("Total_Award_Years"),
                 pl.col("Award_Year").min().alias("First_Award_Year"),
                 pl.col("Award_Year").max().alias("Latest_Award_Year"),
-                pl.col("Laureat_Price_Amount")
-                    .sum()
-                    .round(0)
-                    .alias("Total_Prize_Distributed_SEK"),
-                pl.col("Laureat_Prize_Amount_Adjusted")
-                    .sum()
-                    .round(0)
-                    .alias("Total_Adjusted_Prize_Distributed_SEK"),
-                pl.col("Laureat_Prize_Amount_Adjusted")
-                    .mean()
-                    .round(0)
-                    .alias("Avg_Adjusted_Prize_Per_Winner_SEK"),
+                pl.col("Laureat_Prize_Amount").sum().round(0).alias("Total_Prize_Distributed_SEK"),
+                pl.col("Laureat_Prize_Amount_Adjusted").sum().round(0).alias("Total_Adjusted_Prize_Distributed_SEK"),
+                pl.col("Laureat_Prize_Amount_Adjusted").mean().round(0).alias("Avg_Adjusted_Prize_Per_Winner_SEK"),
             ]
         )
         .sort("Total_Laureates", descending=True)
-        .with_columns(pl.lit(datetime.now())).alias("Gold_Loaded_Time")
+        .with_columns(pl.lit(datetime.now()).alias("Gold_Loaded_Time"))
     )
 
 # %% Funksjon for tiårstrender
@@ -96,7 +87,7 @@ def build_multiple_winners(df: pl.DataFrame) -> pl.DataFrame:
             ]
         )
         .sort(["Laureat_Id", "Award_Year"])
-        .with_columns(pl.lit(datetime.now().alias("Gold_Loaded_Time")))
+        .with_columns(pl.lit(datetime.now()).alias("Gold_Loaded_Time"))
     )
 
 #%% Steg 1: Les inn aktive silver data
@@ -104,30 +95,7 @@ df_silver_active = load_active_silver_data(SILVER_FILE)
 
 #%% Steg 2: Berik data med numerisk prisandel og beløp
 df_enriched = enrich_with_calculated_amounts(df_silver_active)
-df_enriched.select(
-    [
-        "Laureat_Name",
-        "Prize_Portion",
-        "Laureat_Prize_Amount"
-    ]
-).head(10)
-
-#%%
-df_test = df_enriched.group_by("Category_Name").agg([
-    pl.count("Laureat_Id").alias("Total_Laureates"),
-    pl.col("Award_Year").n_unique().alias("Total_Award_Years"),
-    pl.col("Award_Year").min().alias("First_Award_Year"),
-    pl.col("Award_Year").max().alias("Latest_Award_Year")
-])
-print(df_test)
-
-#%%
-df_test2 = df_enriched.filter(pl.col("Award_Year") >= 2000).group_by(["Category_Name", "Award_Year"]).agg(
-    [
-        pl.count("Laureat_Id").alias("Laureat_Count")
-    ]
-).sort(["Category_Name", "Award_Year"])
-print(df_test2)
+print(df_enriched.head(10))
 
 #%% Steg 3: Bygg og inspiser Gold Category Summary
 df_gold_category = build_category_summary(df_enriched)
