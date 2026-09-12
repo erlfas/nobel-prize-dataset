@@ -147,10 +147,20 @@ print(f"Lest inn bronze: {df_bronze.height} og {df_bronze.width}")
 # %%
 def process_silver_scd2(df_bronze: pl.DataFrame, silver_filepath: str) -> pl.DataFrame:
     # 1. Klargjør datatyper
+    reference_year = (
+        df_bronze.filter(
+            (pl.col("Prize_Amount") == pl.col("Prize_Amount_Adjusted")) & 
+            (pl.col("Prize_Amount") > 0)
+        )
+        .select(pl.col("Award_Year").cast(pl.Int64).max())
+        .item()
+    )
+
     df_bronze_prepared = df_bronze.with_columns(
         pl.col("Award_Year").cast(pl.Int64),
         pl.col("Laureat_Id").cast(pl.Int64),
         pl.col("Date_Awarded").cast(pl.Date),
+        pl.lit(reference_year).cast(pl.Int64).alias("Prize_Adjusted_Reference_Year"),
         pl.when(pl.col("Prize_Portion").str.contains("/"))
             .then(
                 pl.col("Prize_Portion").str.split("/").list.get(0).cast(pl.Float64)
