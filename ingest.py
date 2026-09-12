@@ -63,7 +63,10 @@ df_flat = (
     .explode("laureates")
     .with_columns(
         pl.col("laureates").struct.field("id").alias("laureat_id"),
-        pl.col("laureates").struct.field("knownName").struct.field("en").alias("laureat_name"),
+        pl.coalesce([
+            pl.col("laureates").struct.field("knownName").struct.field("en"),
+            pl.col("laureates").struct.field("orgName").struct.field("en")
+        ]).alias("laureat_name"),
         pl.col("laureates").struct.field("portion").alias("prize_portion"),
         pl.col("laureates").struct.field("motivation").struct.field("en").alias("motivation")
     )
@@ -79,6 +82,7 @@ df_flat = (
         pl.col("category_name").alias("Category_Name"),
         pl.col("category_full_name").alias("Category_Full_Name")
     ])
+    .filter(pl.col("Laureat_Id").is_not_null())
 )
 # %% Legger til systemkolonner
 key_cols = ["Laureat_Id", "Award_Year", "Category_Name"]

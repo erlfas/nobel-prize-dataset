@@ -9,6 +9,7 @@ SILVER_FILE = "nobel_prizes_silver.parquet"
 GOLD_CATEGORY_FILE = "nobel_gold_category_summary.parquet"
 GOLD_DECADE_FILE = "nobel_gold_decade_trends.parquet"
 GOLD_MULTIPLE_WINNERS_FILE = "nobel_gold_multiple_winners.parquet"
+
 # %% Funksjon for innlesing av aktive rader
 def load_active_silver_data(silver_filepath: str) -> pl.DataFrame:
     if not os.path.exists(silver_filepath):
