@@ -1,0 +1,7 @@
+# Parquet data files
+*.parquet
+
+# Python artifacts and virtual environment
+__pycache__/
+*.py[cod]
+.venv/
