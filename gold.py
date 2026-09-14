@@ -67,6 +67,26 @@ def build_decade_trends(df: pl.DataFrame) -> pl.DataFrame:
         .with_columns(pl.lit(datetime.now()).alias("Gold_Loaded_Time"))
     )
 
+def build_multiple_winners_window(df: pl.DataFrame) -> DataFrame:
+    return (
+        df.filter(pl.len().over("Laureat_Id") > 1)
+        .sort(["Laureat_Id", "Award_Year"])
+        .with_columns(
+            pl.col("Award_Year").rank("ordinal").over("Laureat_Id").alias("Prize_Sequence_Number"),
+            (pl.col("Award_Year") - pl.col("Award_Year").shift(1).over("Laureat_Id")).alias("Years_Since_Last_Prize")
+        )
+        .select([
+            "Laureat_Id",
+            "Laureat_Name",
+            "Award_Year",
+            "Category_Name",
+            "Prize_Sequence_Number",
+            "Years_Since_Last_Prize"
+        ])
+        .with_columns(pl.lit(datetime.now()).alias("Gold_Loaded_Time"))
+    )
+
+
 # %% Funksjon for flerdoble vinnere
 def build_multiple_winners(df: pl.DataFrame) -> pl.DataFrame:
     multiple_ids = (
@@ -107,7 +127,7 @@ df_gold_decade = build_decade_trends(df_enriched)
 print(df_gold_decade.head(15))
 
 #%% Steg 5: Bygg og inspiser Gold Multiple Winners
-df_gold_multiple = build_multiple_winners(df_enriched)
+df_gold_multiple = build_multiple_winners_window(df_enriched)
 print(df_gold_multiple)
 
 #%% Steg 6: Skriv alle Gold-tabeller til Parquet
