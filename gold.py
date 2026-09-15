@@ -7,6 +7,7 @@ from datetime import datetime
 # %%
 SILVER_FILE = "nobel_prizes_silver.parquet"
 GOLD_CATEGORY_FILE = "nobel_gold_category_summary.parquet"
+GOLD_CATEGORY_CUMULATIVE_FILE = "nobel_gold_category_cumulative_summary.parquet"
 GOLD_DECADE_FILE = "nobel_gold_decade_trends.parquet"
 GOLD_MULTIPLE_WINNERS_FILE = "nobel_gold_multiple_winners.parquet"
 
@@ -26,6 +27,22 @@ def enrich_with_calculated_amounts(df: pl.DataFrame) -> pl.DataFrame:
     return df.with_columns(
         (pl.col("Prize_Amount") * pl.col("Prize_Portion")).round(2).alias("Laureat_Prize_Amount"),
         (pl.col("Prize_Amount_Adjusted") * pl.col("Prize_Portion")).round(2).alias("Laureat_Prize_Amount_Adjusted")
+    )
+
+def build_category_cumulative_summary(df: pl.DataFrame) -> pl.DataFrame:
+    return (
+        df.sort(["Category_Name", "Award_Year"])
+        .with_columns(
+            pl.col("Laureat_Prize_Amount_Adjusted").cum_sum().over("Category_Name").round(0).alias("Cumulative_Prize_SEK"),
+            pl.col("Laureat_Id").cum_count().over("Category_Name").alias("Cumulative_Laureates")
+        )
+        .select([
+            "Award_Year",
+            "Category_Name",
+            "Laureat_Name",
+            "Cumulative_Laureates",
+            "Cumulative_Prize_SEK"
+        ])
     )
 
 #%% Funksjon for kategori-oppsummering
@@ -122,6 +139,10 @@ print(df_enriched.head(10))
 df_gold_category = build_category_summary(df_enriched)
 print(df_gold_category)
 
+#%%
+df_gold_category_cumulative = build_category_cumulative_summary(df_enriched)
+print(df_gold_category_cumulative)
+
 #%% Steg 4: Bygg og inspiser Gold Decade Trends
 df_gold_decade = build_decade_trends(df_enriched)
 print(df_gold_decade.head(15))
@@ -132,5 +153,6 @@ print(df_gold_multiple)
 
 #%% Steg 6: Skriv alle Gold-tabeller til Parquet
 df_gold_category.write_parquet(GOLD_CATEGORY_FILE)
+df_gold_category_cumulative.write_parquet(GOLD_CATEGORY_CUMULATIVE_FILE)
 df_gold_decade.write_parquet(GOLD_DECADE_FILE)
 df_gold_multiple.write_parquet(GOLD_MULTIPLE_WINNERS_FILE)
